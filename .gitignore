@@ -1,0 +1,26 @@
+# Keep all Markdown, including the private build specification, on this device.
+*.[mM][dD]
+*.markdown
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env*
+*.local
+*.log
+*.tmp
+.sites-checkout*/
+*.tar.gz
+*.tgz
+*.tsbuildinfo
+.openai/
+.codex/
+.agents/
+.aws/
+.private/
+artifacts/
+*.zip
+*.pem
+*.key
+lunchbox-*.json
