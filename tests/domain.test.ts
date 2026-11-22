@@ -3,6 +3,7 @@ import { addDays, localDate, monday, noon } from '../src/domain/dates'
 import {
   seedState,
   clone,
+  drinkCategory,
   weekdays,
   type State,
   type Scope,
@@ -52,6 +53,33 @@ describe('local calendar', () => {
   })
 })
 describe('planner', () => {
+  it('uses a catalog’s drink ID and leaves repurposed category IDs intact', () => {
+    const categories = seedState().categories
+    const starter = drinkCategory(categories)
+    expect(starter.id).toBe('cat-drink')
+    starter.name = 'Dessert'
+    const added = drinkCategory(categories)
+    expect(added.name).toBe('Drink')
+    expect(categories.some(c => c.id === added.id)).toBe(false)
+    categories.push({ ...added, id: 'custom-milk', name: 'Drinks' })
+    expect(drinkCategory(categories).id).toBe('custom-milk')
+  })
+  it('reports a drink shortage only for the child and meal that requested it', () => {
+    const s = fixture()
+    s.schedules[0].weekdays.Monday[1].requirements.push({ categoryId: 'cat-drink', count: 1 })
+    for (const id of ['archived', 'unavailable', 'disliked']) {
+      s.foods.push({ id, name: id, archived: id === 'archived', categoryIds: ['cat-drink'] })
+      s.weeklyInventories[0].entries.push({ foodId: id, available: id !== 'unavailable' })
+    }
+    s.preferences.push({ childId: 'child-1', foodId: 'disliked', rating: 'disliked' })
+    const plan = generatePlan(s, week, {}, 'drinks')
+    const slots = plan.days.flatMap(d => d.children.flatMap(c => c.meals.flatMap(m => m.slots)))
+    expect(slots.filter(slot => slot.categoryId === 'cat-drink')).toHaveLength(1)
+    expect(warnings(s, plan)).toEqual([{
+      date: week, childId: 'child-1', meal: 'Lunch',
+      message: '1 Drink slot missing. Add an available, accepted food.',
+    }])
+  })
   it('keeps weekdays and children independent', () => {
     const s = fixture()
     s.schedules[0].weekdays.Monday = []

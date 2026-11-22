@@ -12,6 +12,8 @@ Plan five weekdays of school lunches and check items off as you pack. This insta
 4. Open **Weekly plan** and generate meals. Missing items stay visible when a requirement cannot be filled. Editing inventory or preferences flags an affected meal until you choose to regenerate.
 5. Use **Today** to check off packed items. The **Weekly prep** list groups the week's foods by category.
 
+To pack a drink, tag a catalog item **Drink** and mark it available in **Inventory**. In **Setup > Schedules**, select the child and weekday, edit the meal, and check **Include a drink**. Generate or regenerate that meal’s day to assign an available drink the child accepts. Use **Copy day** to apply the schedule to other weekdays for that child.
+
 ## Install and use offline
 
 Open the HTTPS site in Android Chrome while online. Wait for **Ready for offline use**, then choose **Install app** or **Add to Home screen** from Chrome's menu. Reopen from the home-screen icon. The app caches its screens, fonts, artwork and scripts for offline use. When an update appears, finish edits and export a backup before choosing **Update now**.

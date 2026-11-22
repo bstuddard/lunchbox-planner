@@ -1,6 +1,7 @@
 import { ref, shallowRef, computed } from 'vue'
 import {
   clone,
+  drinkCategory,
   seedState,
   type State,
   type Section,
@@ -31,6 +32,16 @@ export const guide = ref(-1),
 export const plan = computed(() =>
   state.value.weeklyPlans.find((p) => p.weekStart === week.value),
 )
+export const drink = computed(() => drinkCategory(state.value.categories))
+export const categoryChoices = computed(() => {
+  const categories = state.value.categories
+  return categories.includes(drink.value) ? categories : [...categories, drink.value]
+})
+export function saveDrinkCategory(draft: State, selectedIds: string[]) {
+  const category = drinkCategory(draft.categories)
+  if (selectedIds.includes(category.id) && !draft.categories.includes(category))
+    draft.categories.push(category)
+}
 const db = new Database((message) => {
   saveError.value = message
 })

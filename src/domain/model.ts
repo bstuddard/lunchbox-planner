@@ -22,6 +22,16 @@ export interface Food {
   archived: boolean
   notes?: string
 }
+export function drinkCategory(categories: Category[]): Category {
+  const matches = categories.filter(c => /^drinks?$/i.test(c.name.trim()))
+  const existing = matches.find(c => c.id === 'cat-drink') ?? matches[0]
+  if (existing) return existing
+  // A restored catalog may already use the starter ID for a different category.
+  const ids = new Set(categories.map(c => c.id))
+  let id = 'cat-drink'
+  for (let n = 2; ids.has(id); n++) id = 'cat-drink-' + n
+  return { id, name: 'Drink', varietyRole: 'other', sortOrder: categories.length }
+}
 export interface Requirement {
   categoryId: string
   count: number

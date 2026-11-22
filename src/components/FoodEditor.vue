@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import type { Food } from '../domain/model'
 import { uid } from '../domain/model'
-import { state, change, inventory } from '../store'
+import { categoryChoices, change, inventory, saveDrinkCategory } from '../store'
 import Modal from './Modal.vue'
 const props = defineProps<{ food?: Food; quick?: boolean }>(),
   emit = defineEmits<{ close: [] }>()
@@ -24,6 +24,7 @@ function save() {
   }
   if (
     change((s) => {
+      saveDrinkCategory(s, food.categoryIds)
       const i = s.foods.findIndex((f) => f.id === food.id)
       if (i < 0) s.foods.push(food)
       else s.foods[i] = food
@@ -51,7 +52,7 @@ function save() {
       <fieldset>
         <legend>Categories</legend>
         <div class="choices">
-          <label v-for="c in state.categories" :key="c.id"
+          <label v-for="c in categoryChoices" :key="c.id"
             ><input v-model="cats" type="checkbox" :value="c.id" />{{
               c.name
             }}</label

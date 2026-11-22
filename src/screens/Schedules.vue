@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Plus, Trash2, Pencil, ChevronUp, ChevronDown, Copy } from '@lucide/vue'
-import { state, change } from '../store'
+import { state, change, categoryChoices, drink, saveDrinkCategory } from '../store'
 import {
   weekdays,
   uid,
@@ -9,6 +9,7 @@ import {
   type Day,
   type Meal,
   type Schedule,
+  type State,
 } from '../domain/model'
 import Modal from '../components/Modal.vue'
 import Transfer from '../components/Transfer.vue'
@@ -24,7 +25,16 @@ const meals = computed(
       day.value
     ] ?? [],
 )
-function mutate(fn: (s: Schedule) => void) {
+const includesDrink = computed({
+  get: () => edit.value?.requirements.some(r => r.categoryId === drink.value.id) ?? false,
+  set(include: boolean) {
+    const meal = edit.value
+    if (!meal) return
+    if (include) meal.requirements.push({ categoryId: drink.value.id, count: 1 })
+    else meal.requirements = meal.requirements.filter(r => r.categoryId !== drink.value.id)
+  },
+})
+function mutate(fn: (s: Schedule, draft: State) => void) {
   return change((d) => {
     let s = d.schedules.find((s) => s.childId === props.childId)
     if (!s) {
@@ -40,20 +50,19 @@ function mutate(fn: (s: Schedule) => void) {
       }
       d.schedules.push(s)
     }
-    fn(s)
+    fn(s, d)
   })
 }
 function open(m?: Meal) {
   err.value = ''
+  const first = state.value.categories.find(c => c.id !== drink.value.id)
   edit.value = m
     ? clone(m)
     : {
         id: uid(),
         name: '',
         sortOrder: meals.value.length,
-        requirements: [
-          { categoryId: state.value.categories[0]?.id ?? '', count: 1 },
-        ],
+        requirements: first ? [{ categoryId: first.id, count: 1 }] : [],
       }
 }
 function save() {
@@ -75,7 +84,8 @@ function save() {
     return
   }
   if (
-    mutate((s) => {
+    mutate((s, draft) => {
+      saveDrinkCategory(draft, m.requirements.map(r => r.categoryId))
       const rows = s.weekdays[day.value],
         i = rows.findIndex((x) => x.id === m.id)
       if (i < 0) rows.push(clone(m))
@@ -192,9 +202,12 @@ watch(
       <label>Meal name<input v-model="edit.name" required autofocus /></label>
       <fieldset>
         <legend>Required foods</legend>
+        <div class="choices">
+          <label><input v-model="includesDrink" type="checkbox" />Include a drink</label>
+        </div>
         <div v-for="(r, i) in edit.requirements" :key="i" class="req">
           <select v-model="r.categoryId" aria-label="Required category">
-            <option v-for="c in state.categories" :value="c.id">
+            <option v-for="c in categoryChoices" :key="c.id" :value="c.id">
               {{ c.name }}
             </option></select
           ><input
@@ -220,7 +233,7 @@ watch(
         class="secondary"
         @click="
           edit.requirements.push({
-            categoryId: state.categories[0]?.id ?? '',
+            categoryId: categoryChoices[0].id,
             count: 1,
           })
         "

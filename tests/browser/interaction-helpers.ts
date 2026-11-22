@@ -46,11 +46,11 @@ export function exampleBackup() {
   return { schema: schemaFor('backup'), data: {section: 'backup', formatVersion: 1, appState: state} }
 }
 
-export async function openPlanner(page: Page) {
+export async function openPlanner(page: Page, backup = exampleBackup()) {
   await page.clock.setFixedTime(new Date(2026, 10, 23, 12))
   await page.goto('./#setup')
   await button(page, 'Data').click()
-  await chooseJSON(page, 'Full backup', exampleBackup())
+  await chooseJSON(page, 'Full backup', backup)
   await applyImport(page, 'Replace all data')
 }
 
