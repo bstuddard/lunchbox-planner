@@ -98,6 +98,10 @@ function remove(m: Meal) {
       s.weekdays[day.value].forEach((x, i) => (x.sortOrder = i))
     })
 }
+function chooseCopyDays() {
+  targets.value = weekdays.filter((dayName) => dayName !== day.value)
+  copying.value = true
+}
 function copy() {
   if (!targets.value.length) return
   mutate((s) => {
@@ -175,10 +179,7 @@ watch(
     </div>
     <button
       class="secondary"
-      @click="
-        targets = weekdays.filter((d) => d !== day)
-        copying = true
-      "
+        @click="chooseCopyDays"
     >
       <Copy />{{
         day === 'Monday' ? 'Copy Monday to weekdays' : 'Copy day to…'

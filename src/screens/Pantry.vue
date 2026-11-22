@@ -135,6 +135,10 @@ function archive(f: Food) {
       s.foods.find((x) => x.id === f.id)!.archived = !f.archived
     })
 }
+function openCategories() {
+  editCat()
+  manage.value = true
+}
 function editCat(c?: Category) {
   catId.value = c?.id ?? ''
   catName.value = c?.name ?? ''
@@ -214,10 +218,7 @@ function removeCat(c: Category) {
         <button
           v-if="!stock"
           class="secondary"
-          @click="
-            manage = true
-            editCat()
-          "
+          @click="openCategories"
         >
           <Tags />Categories</button
         ><button class="primary" @click="editing = null">
