@@ -1,4 +1,6 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+@source './';
+@source '../index.html';
 @font-face {
   font-family: DM Sans;
   src: url('@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2')

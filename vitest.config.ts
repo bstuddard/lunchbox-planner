@@ -1,2 +1,3 @@
 import { defineConfig } from 'vitest/config'
-export default defineConfig({ test: { include: ['tests/**/*.test.ts'] } })
+import { validators } from './build/validators'
+export default defineConfig({ plugins: [validators()], test: { include: ['tests/**/*.test.ts'] } })

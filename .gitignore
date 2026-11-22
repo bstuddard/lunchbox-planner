@@ -1,6 +1,15 @@
-# Keep all Markdown, including the private build specification, on this device.
+# Only the public project README is shared.
 *.[mM][dD]
 *.markdown
+!/README.md
+# Family imports and backups can be renamed. Only project configuration belongs in Git.
+*.[jJ][sS][oO][nN]
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+.npmrc
+*.p12
+*.pfx
 node_modules/
 dist/
 coverage/
@@ -23,4 +32,3 @@ artifacts/
 *.zip
 *.pem
 *.key
-lunchbox-*.json

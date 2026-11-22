@@ -2,14 +2,22 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwind from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { release } from './build/release'
+import { validators } from './build/validators'
 const base = process.env.PLANNER_BASE || '/'
 if (!/^\/(?:[a-zA-Z0-9_-]+\/)*$/.test(base))
   throw Error('PLANNER_BASE must be an absolute directory path ending in /.')
 export default defineConfig({
   base,
+  build: { license: { fileName: 'dependency-licenses.txt' } },
+  server: {
+    fs: { deny: ['.env', '.env.*', '*.{crt,pem,key,p12,pfx}', '**/.git/**', '**/.private/**', '**/.openai/**', '**/.npmrc', '**/*.[mM][dD]', '**/lunchbox-*.json'] },
+  },
   plugins: [
     vue(),
     tailwind(),
+    validators(),
+    release(),
     VitePWA({
       registerType: 'prompt',
       scope: base,

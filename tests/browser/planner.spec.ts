@@ -95,6 +95,7 @@ test('installed shell supports offline setup, scoped generation, packing, export
   await page.getByRole('checkbox').first().check()
   const packed = page.getByText(/1 of \d+ packed/)
   await expect(packed).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Saved on this device', exact: true })).toBeVisible()
   await page.reload()
   await expect(packed).toBeVisible()
   await nav('Setup')

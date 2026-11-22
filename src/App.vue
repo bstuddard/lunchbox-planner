@@ -71,6 +71,14 @@ function data() {
   subsection.value = 'Data'
 }
 let timer: ReturnType<typeof setInterval>
+function protectPendingSave(event: BeforeUnloadEvent) {
+  event.preventDefault()
+  event.returnValue = true
+}
+watch(saving, (pending) => {
+  if (pending) window.addEventListener('beforeunload', protectPendingSave)
+  else window.removeEventListener('beforeunload', protectPendingSave)
+}, { flush: 'sync' })
 onMounted(async () => {
   readRoute()
   window.addEventListener('popstate', readRoute)
@@ -79,6 +87,7 @@ onMounted(async () => {
   await initialize()
 })
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', protectPendingSave)
   window.removeEventListener('popstate', readRoute)
   document.removeEventListener('visibilitychange', refreshDate)
   clearInterval(timer)

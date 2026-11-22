@@ -238,6 +238,8 @@ onMounted(async () => {
         A full backup includes every week, meal assignment and packing check.
         Keep a copy in your downloads or another location you control.
       </p>
+      <p>Backups are readable JSON files. Nicknames are useful on shared devices.
+        Apps hosted on the same hostname and port over HTTPS share a browser storage boundary.</p>
       <button class="primary" @click="download('backup')">
         <Download />Export full backup
       </button>
@@ -326,6 +328,7 @@ onMounted(async () => {
       <button v-if="updateReady" class="secondary" @click="update">
         Apply update
       </button>
+      <p><a class="link" href="https://github.com/bstuddard/lunchbox-planner" rel="noreferrer">Source code and GNU GPL v3 license</a></p>
     </section></template
   ><WarningList />
 </template>
