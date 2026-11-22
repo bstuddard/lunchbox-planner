@@ -247,6 +247,10 @@ test('a persistent profile relaunches offline and updates only on request', asyn
     await expect(
       page.getByLabel('Child name', { exact: true }).first(),
     ).toHaveValue('Unsubmitted edit')
+    const updateBackup = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Export backup', exact: true }).click()
+    const backupPath = await (await updateBackup).path()
+    expect(JSON.parse(await readFile(backupPath!, 'utf8')).data.appState.children[0].name).toBe('Saved child')
     await page.getByRole('button', { name: 'Save name' }).first().click()
     await Promise.all([
       page.waitForEvent('load'),
@@ -255,6 +259,14 @@ test('a persistent profile relaunches offline and updates only on request', asyn
     await expect(
       page.getByLabel('Child name', { exact: true }).first(),
     ).toHaveValue('Unsubmitted edit')
+    version++
+    await page.evaluate(async () => { await (await navigator.serviceWorker.ready).update() })
+    await page.getByRole('button', { name: 'Data', exact: true }).click()
+    await Promise.all([
+      page.waitForEvent('load'),
+      page.getByRole('button', { name: 'Apply update', exact: true }).click(),
+    ])
+    await expect(page.getByLabel('Child name', { exact: true }).first()).toHaveValue('Unsubmitted edit')
   } finally {
     await ctx.close()
     server.closeAllConnections()

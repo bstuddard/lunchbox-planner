@@ -47,8 +47,12 @@ const childId = ref(''),
 const names = ref<Record<string, string>>({})
 watch(
   () => state.value.children,
-  (children) => {
-    names.value = Object.fromEntries(children.map((c) => [c.id, c.name]))
+  (children, previous) => {
+    const previousNames = new Map(previous?.map(c => [c.id, c.name]))
+    names.value = Object.fromEntries(children.map(c => [
+      c.id,
+      previousNames.get(c.id) === c.name ? names.value[c.id] : c.name,
+    ]))
     if (!children.some((c) => c.id === childId.value))
       childId.value = children[0]?.id ?? ''
   },
@@ -91,8 +95,10 @@ function rename(id: string) {
     change((s) => {
       s.children.find((c) => c.id === id)!.name = name
     })
-  )
+  ) {
+    names.value[id] = name
     toast('Child name updated')
+  }
 }
 function add() {
   const name = newName.value.trim()

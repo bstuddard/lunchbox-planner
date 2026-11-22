@@ -1,4 +1,4 @@
-import { chromium, expect, test, type Page } from '@playwright/test'
+import { chromium, devices, expect, test, type Page } from '@playwright/test'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -40,8 +40,8 @@ async function exported(page: Page, name = 'Export') {
 test('13 catalog foods, later edits, inventory, schedules and restored backup survive offline browser restarts', async ({ baseURL }) => {
   const profile = await mkdtemp(join(tmpdir(), 'planner-catalog-'))
   const launch = () => chromium.launchPersistentContext(profile, {
+    ...devices['Pixel 7'],
     channel: process.env.PLANNER_BROWSER_CHANNEL || undefined,
-    viewport: { width: 390, height: 844 },
   })
   let context = await launch()
   let page = context.pages()[0]

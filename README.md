@@ -41,7 +41,7 @@ npm run build
 npm run preview
 ```
 
-For browser tests, build first, then run `npx playwright install chromium` and `npm run test:browser`. You can also select an existing Chrome installation with `PLANNER_BROWSER_CHANNEL=chrome`. The automated browser tests exercise offline launch, imports, backups, packing and app updates in disposable profiles. Android's device-specific installation prompts, file picker and home-screen behavior require a physical-device check.
+For browser tests, build first, then run `npx playwright install chromium` and `npm run test:browser`. You can also select an existing Chrome installation with `PLANNER_BROWSER_CHANNEL=chrome`. Playwright tests desktop and mobile navigation, catalog and schedule editing, inventory, preferences, packing, and all seven JSON transfers. It also checks failed saves, recovery, and service worker updates. A disposable profile with Pixel 7 emulation closes and relaunches the planner offline to verify the saved catalog. Android's native install prompt, file picker and home-screen launch require a physical-device check.
 
 ## Deploy your own copy
 

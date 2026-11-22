@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import {
   CalendarDays,
   ClipboardCheck,
@@ -46,6 +46,11 @@ const paths = [
   { key: 'Setup', icon: Settings2, label: 'Setup & data' },
 ] as const
 const active = computed(() => paths.find((p) => p.key === page.value)!)
+const main = ref<HTMLElement>()
+function skipToContent() {
+  main.value?.focus()
+  main.value?.scrollIntoView()
+}
 function navigate(key: typeof page.value) {
   guide.value = -1
   page.value = key
@@ -94,7 +99,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <a class="skip" href="#main">Skip to content</a>
+  <a class="skip" href="#main" @click.prevent="skipToContent">Skip to content</a>
   <div class="shell">
     <aside class="rail">
       <a href="#today" class="brand" @click.prevent="navigate('Today')"
@@ -148,7 +153,7 @@ onBeforeUnmount(() => {
           }}
         </button>
       </header>
-      <main id="main" tabindex="-1">
+      <main ref="main" id="main" tabindex="-1">
         <div v-if="!ready" class="panel">Opening your planner…</div>
         <template v-else>
           <div v-if="saveError" class="alert" role="alert">

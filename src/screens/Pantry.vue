@@ -31,12 +31,17 @@ const search = ref(''),
 const catName = ref(''),
   catId = ref(''),
   role = ref<'other' | 'main'>('other')
+watch(() => state.value.categories, (categories) => {
+  if (category.value && !categories.some(c => c.id === category.value))
+    category.value = ''
+})
 watch(
   () => props.stock,
   () => {
     search.value = ''
     category.value = ''
     status.value = ''
+    editing.value = undefined
     manage.value = false
   },
 )
