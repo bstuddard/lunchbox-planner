@@ -18,7 +18,7 @@ function save() {
   const food: Food = {
     id: props.food?.id ?? uid(),
     name: name.value.trim(),
-    categoryIds: cats.value,
+    categoryIds: [...cats.value],
     archived: props.food?.archived ?? false,
     notes: notes.value.trim(),
   }

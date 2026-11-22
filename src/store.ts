@@ -46,21 +46,26 @@ export function toast(message: string) {
 function enqueue(snapshot: State, restore = false) {
   pending++
   saving.value = true
-  tail = tail.then(async () => {
-    try {
-      savedAt.value =
-        restore && db.recovery !== undefined
-          ? await db.restoreCorrupt(snapshot)
-          : await db.save(snapshot)
-      saveError.value = ''
-    } catch (e) {
+  const written = tail.then(async () => {
+    if (restore && db.recovery !== undefined) {
+      savedAt.value = await db.restoreCorrupt(snapshot)
+    } else {
+      if (!db.writeAllowed) throw Error(saveError.value || 'Device database is unavailable.')
+      savedAt.value = await db.save(snapshot)
+    }
+    saveError.value = ''
+  })
+  // Return this operation's outcome to its caller. The queue itself must
+  // remain usable after a failed write, including when the user retries.
+  tail = written
+    .catch((e) => {
       saveError.value = (e as Error).message
-    } finally {
+    })
+    .finally(() => {
       pending--
       saving.value = pending > 0
-    }
-  })
-  return tail
+    })
+  return written
 }
 export const settled = () => tail
 export async function initialize() {
@@ -80,14 +85,19 @@ export async function initialize() {
   }
   ready.value = true
 }
-export function change(edit: (draft: State) => void, restore = false) {
+export function replaceState(next: State, restore = false) {
+  validateState(next)
+  // Editors own their drafts. Keep the live state and its queued revision
+  // detached from any mutable form or import-preview values.
+  const snapshot = clone(next)
+  state.value = snapshot
+  return enqueue(snapshot, restore)
+}
+export function change(edit: (draft: State) => void) {
   try {
     const next = clone(state.value)
     edit(next)
-    validateState(next)
-    state.value = next
-    if (db.writeAllowed || (restore && db.recovery !== undefined))
-      void enqueue(next, restore)
+    void replaceState(next)
     return true
   } catch (e) {
     toast((e as Error).message)

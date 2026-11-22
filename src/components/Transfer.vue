@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, shallowRef, computed, watch } from 'vue'
 import { Upload, Download, FileJson } from '@lucide/vue'
-import { state, week, download, change, toast } from '../store'
+import { state, week, download, replaceState, toast } from '../store'
 import { previewImport, parseImport, maxBytes } from '../data/transfer'
 import type { Section } from '../domain/model'
 import { formatDate } from '../domain/dates'
@@ -11,7 +11,8 @@ const props = defineProps<{ section: Section }>(),
   opened = ref(false),
   mode = ref('merge'),
   error = ref(''),
-  parsed = ref<ReturnType<typeof parseImport>>()
+  applying = ref(false),
+  parsed = shallowRef<ReturnType<typeof parseImport>>()
 const label = computed(() =>
   props.section === 'backup'
     ? 'Full backup'
@@ -56,12 +57,19 @@ const preview = computed(() => {
     return { error: (e as Error).message }
   }
 })
-function apply() {
+async function apply() {
   const p = preview.value
-  if (!p || 'error' in p) return
-  if (change((s) => Object.assign(s, p.next), props.section === 'backup')) {
+  if (applying.value || !p || 'error' in p) return
+  applying.value = true
+  error.value = ''
+  try {
+    await replaceState(p.next, props.section === 'backup')
     toast('Import applied')
     reset()
+  } catch (e) {
+    error.value = 'Import was not saved. ' + (e as Error).message
+  } finally {
+    applying.value = false
   }
 }
 </script>
@@ -84,12 +92,12 @@ function apply() {
       @change="read"
     />
   </section>
-  <Modal v-if="opened" :title="'Import ' + label" @close="reset"
-    ><p v-if="error" class="alert">{{ error }}</p>
+  <Modal v-if="opened" :title="'Import ' + label" @close="!applying && reset()"
+    ><p v-if="error" class="alert" role="alert">{{ error }}</p>
     <template v-if="parsed"
       ><p>{{ label }}{{ scope }} · Format version {{ parsed.formatVersion }}</p>
       <label v-if="section !== 'backup'"
-        >Import method<select v-model="mode">
+        >Import method<select v-model="mode" :disabled="applying">
           <option value="merge">Merge / update by stable ID</option>
           <option value="replace">Replace this section</option>
         </select></label
@@ -124,13 +132,13 @@ function apply() {
       </div></template
     >
     <div class="actions end">
-      <button class="secondary" @click="reset">Cancel</button
+      <button class="secondary" :disabled="applying" @click="reset">{{ error ? 'Close' : 'Cancel' }}</button
       ><button
         class="primary"
-        :disabled="!preview || 'error' in preview"
+        :disabled="applying || !preview || 'error' in preview"
         @click="apply"
       >
-        {{ section === 'backup' ? 'Replace all data' : 'Apply import' }}
+        {{ applying ? 'Saving…' : section === 'backup' ? 'Replace all data' : 'Apply import' }}
       </button>
     </div></Modal
   >

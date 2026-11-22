@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import type { State } from '../domain/model'
+import { clone, type State } from '../domain/model'
 import { migrateState } from './transfer'
 export interface Saved {
   revision: number
@@ -68,6 +68,8 @@ export class Database {
   async save(state: State): Promise<string> {
     if (!this.db || !this.writeAllowed)
       throw Error('Device database is unavailable.')
+    // Capture plain JSON before opening the transaction or yielding to an edit.
+    const snapshot = clone(state)
     const tx = this.db.transaction('snapshots', 'readwrite')
     const old = await tx.store.get('current')
     if ((old?.revision ?? 0) !== this.revision) {
@@ -79,11 +81,10 @@ export class Database {
       )
     }
     const savedAt = new Date().toISOString()
-    await tx.store.put(
-      { revision: this.revision + 1, savedAt, state },
-      'current',
-    )
-    await tx.done
+    await Promise.all([
+      tx.store.put({ revision: this.revision + 1, savedAt, state: snapshot }, 'current'),
+      tx.done,
+    ])
     this.revision++
     return savedAt
   }
@@ -92,6 +93,7 @@ export class Database {
   async restoreCorrupt(state: State) {
     if (!this.db || this.recovery === undefined)
       throw Error('No recovery snapshot available.')
+    const snapshot = clone(state)
     const tx = this.db.transaction('snapshots', 'readwrite'),
       raw = await tx.store.get('current')
     if (JSON.stringify(raw) !== JSON.stringify(this.recovery)) {
@@ -100,9 +102,11 @@ export class Database {
       throw Error('Snapshot changed in another window. Reopen to restore.')
     }
     const savedAt = new Date().toISOString()
-    await tx.store.put(raw, 'previous')
-    await tx.store.put({ revision: 1, savedAt, state }, 'current')
-    await tx.done
+    await Promise.all([
+      tx.store.put(raw, 'previous'),
+      tx.store.put({ revision: 1, savedAt, state: snapshot }, 'current'),
+      tx.done,
+    ])
     this.revision = 1
     this.writeAllowed = true
     this.recovery = undefined

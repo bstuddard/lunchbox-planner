@@ -12,6 +12,7 @@ import {
 } from '../src/data/transfer'
 import { sections } from '../src/data/schemas'
 import { Database, storageMode } from '../src/data/database'
+import { reactive } from 'vue'
 const week = '2026-11-23'
 function fixture() {
   const s = seedState()
@@ -141,6 +142,17 @@ describe('device database', () => {
     opened.splice(0).forEach((d) => d.db?.close())
     vi.restoreAllMocks()
   })
+  it('detaches nested Vue proxies before starting a snapshot write', async () => {
+    const a = db()
+    await a.open()
+    const state = fixture()
+    state.foods = reactive(state.foods)
+    const expected = clone(state)
+    const writing = a.save(state)
+    state.foods[0].name = 'Changed after save was requested'
+    await writing
+    expect((await db().open())?.state).toEqual(expected)
+  })
   it('survives reopening and refuses a stale writer', async () => {
     const a = db(),
       b = db(),
@@ -166,7 +178,7 @@ describe('device database', () => {
     await expect(b.open()).rejects.toThrow('stateVersion')
     expect(b.recovery).toEqual(raw)
     await expect(b.save(seedState())).rejects.toThrow()
-    await b.restoreCorrupt(fixture())
+    await b.restoreCorrupt(reactive(fixture()))
     expect(await b.db!.get('snapshots', 'previous')).toEqual(raw)
     expect((await db().open())?.state).toEqual(fixture())
   })
