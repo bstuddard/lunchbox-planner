@@ -43,7 +43,7 @@ const obj = (
   required = Object.keys(properties),
 ) => ({ type: 'object', additionalProperties: false, properties, required })
 const originalStateFields = {
-  stateVersion: { const: 1 },
+  stateVersion: { enum: [1, 2] },
   setupComplete: bool,
   children: array(ref('child')),
   categories: array(ref('category')),

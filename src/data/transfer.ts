@@ -12,7 +12,7 @@ import type {
   Preference,
   SchoolLunch,
 } from '../domain/model'
-import { clone, packedKey, weekdays } from '../domain/model'
+import { addFruitPouchCategory, clone, packedKey, weekdays } from '../domain/model'
 import { addDays, monday, noon } from '../domain/dates'
 import { schemaFor, sections, validatePayload } from './schemas'
 export const maxBytes = 5 * 1024 * 1024
@@ -209,12 +209,17 @@ export function validateState(s: State) {
   })
 }
 export function migrateState(raw: unknown): State {
-  if ((raw as State)?.stateVersion !== 1)
+  const version = (raw as { stateVersion?: unknown } | null)?.stateVersion
+  if (version !== 1 && version !== 2)
     throw Error(
       'Unsupported or missing stateVersion. Keep a copy and open it with a compatible version.',
     )
   validateState(raw as State)
   const state = clone(raw as State)
+  if (version === 1) {
+    addFruitPouchCategory(state.categories)
+    state.stateVersion = 2
+  }
   state.schoolLunches ??= []
   return state
 }

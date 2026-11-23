@@ -41,6 +41,23 @@ function fixture() {
   return s
 }
 describe('section transfer', () => {
+  it('adds Fruit Pouch to old catalogs once and preserves custom category IDs', () => {
+    const state = fixture()
+    const pouch = state.categories.find(c => c.name === 'Fruit Pouch')!
+    const legacy = { ...clone(state), stateVersion: 1 }
+    legacy.categories = legacy.categories.filter(c => c.id !== pouch.id)
+    expect(migrateState(legacy)).toEqual(state)
+    legacy.categories.push({ ...pouch, name: 'Custom category' })
+    const upgraded = migrateState(legacy)
+    const added = upgraded.categories.at(-1)!
+    expect(added.name).toBe('Fruit Pouch')
+    expect(added.id).not.toBe(pouch.id)
+    expect(upgraded.categories.slice(0, -1)).toEqual(legacy.categories)
+    upgraded.categories.pop()
+    expect(migrateState(upgraded)).toEqual(upgraded)
+    legacy.categories.push({ ...pouch, name: 'Fruit Pouches', id: 'custom-pouches' })
+    expect(migrateState(legacy).categories).toEqual(legacy.categories)
+  })
   it('opens legacy snapshots and imports legacy full backups without changing existing records', () => {
     const current = fixture()
     const { schoolLunches, ...legacy } = clone(current)
@@ -130,7 +147,7 @@ describe('section transfer', () => {
         ),
       ).toThrow()
     }
-    expect(() => migrateState({ stateVersion: 2 })).toThrow('stateVersion')
+    expect(() => migrateState({ stateVersion: 3 })).toThrow('stateVersion')
   })
   it('rejects duplicate keys, orphaned packing, broken references and wrong weeks without mutating the source', () => {
     const s = fixture(),

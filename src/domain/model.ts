@@ -22,6 +22,15 @@ export interface Food {
   archived: boolean
   notes?: string
 }
+export function addFruitPouchCategory(categories: Category[]) {
+  if (categories.some(c => /^fruit\s+pouch(?:es)?$/i.test(c.name.trim()))) return
+  const baseId = 'cat-fruit-pouch'
+  const ids = new Set(categories.map(c => c.id))
+  let id = baseId
+  for (let n = 2; ids.has(id); n++) id = baseId + '-' + n
+  const sortOrder = categories.reduce((next, c) => Math.max(next, c.sortOrder + 1), 0)
+  categories.push({ id, name: 'Fruit Pouch', varietyRole: 'other', sortOrder })
+}
 export function drinkCategory(categories: Category[]): Category {
   const matches = categories.filter(c => /^drinks?$/i.test(c.name.trim()))
   const existing = matches.find(c => c.id === 'cat-drink') ?? matches[0]
@@ -102,7 +111,7 @@ export interface SchoolLunch {
   mealId: string
 }
 export interface State {
-  stateVersion: 1
+  stateVersion: 2
   children: Child[]
   categories: Category[]
   foods: Food[]
@@ -158,18 +167,20 @@ export function seedState(): State {
     name,
     sortOrder,
   }))
+  const categories: Category[] = ['Main', 'Snack', 'Fruit', 'Vegetable', 'Protein', 'Drink'].map(
+    (name, sortOrder) => ({
+      id: 'cat-' + name.toLowerCase(),
+      name,
+      sortOrder,
+      varietyRole: sortOrder === 0 ? 'main' : 'other',
+    }),
+  )
+  addFruitPouchCategory(categories)
   return {
-    stateVersion: 1,
+    stateVersion: 2,
     setupComplete: false,
     children,
-    categories: ['Main', 'Snack', 'Fruit', 'Vegetable', 'Protein', 'Drink'].map(
-      (name, sortOrder) => ({
-        id: 'cat-' + name.toLowerCase(),
-        name,
-        sortOrder,
-        varietyRole: sortOrder === 0 ? 'main' : 'other',
-      }),
-    ),
+    categories,
     foods: [],
     schedules: children.map((c) => template(c.id)),
     preferences: [],
