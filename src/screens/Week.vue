@@ -30,7 +30,7 @@ const children = computed(() => {
   for (const c of day.value?.children ?? [])
     if (!list.some((x) => x.id === c.childId))
       list.push({ id: c.childId, name: 'Former child', sortOrder: list.length })
-  return list.filter((c) => !child.value || c.id === child.value)
+  return list.filter((c) => !plan.value || !child.value || c.id === child.value)
 })
 const issues = computed(() =>
   plan.value ? warnings(state.value, plan.value) : [],
@@ -59,46 +59,46 @@ const issues = computed(() =>
       </button>
     </div>
   </div>
-  <template v-else
-    ><div class="toolbar">
-      <label
-        >Show children<select v-model="child">
-          <option value="">All children</option>
-          <option v-for="c in state.children" :key="c.id" :value="c.id">
-            {{ c.name }}
-          </option>
-        </select></label
-      ><button class="secondary" @click="generation = {}">
-        <RefreshCw />Regenerate week
-      </button>
-    </div>
-    <div class="days">
-      <button
-        v-for="(d, i) in weekdays"
-        :key="d"
-        :class="{ selected: selectedDay === addDays(week, i) }"
-        @click="selectedDay = addDays(week, i)"
+  <div v-if="plan" class="toolbar">
+    <label
+      >Show children<select v-model="child">
+        <option value="">All children</option>
+        <option v-for="c in state.children" :key="c.id" :value="c.id">
+          {{ c.name }}
+        </option>
+      </select></label
+    ><button class="secondary" @click="generation = {}">
+      <RefreshCw />Regenerate week
+    </button>
+  </div>
+  <div class="days">
+    <button
+      v-for="(d, i) in weekdays"
+      :key="d"
+      :class="{ selected: selectedDay === addDays(week, i) }"
+      @click="selectedDay = addDays(week, i)"
+    >
+      <strong>{{ d.slice(0, 3) }}</strong
+      ><small>{{ formatDate(addDays(week, i)) }}</small
+      ><small v-if="issues.some((w) => w.date === addDays(week, i))"
+        >{{
+          issues.filter((w) => w.date === addDays(week, i)).length
+        }}
+        alerts</small
       >
-        <strong>{{ d.slice(0, 3) }}</strong
-        ><small>{{ formatDate(addDays(week, i)) }}</small
-        ><small v-if="issues.some((w) => w.date === addDays(week, i))"
-          >{{
-            issues.filter((w) => w.date === addDays(week, i)).length
-          }}
-          alerts</small
-        >
-      </button>
-    </div>
-    <div class="child-grid">
-      <ChildCard
-        v-for="(c, i) in children"
-        :key="c.id"
-        :child="c"
-        :index="i"
-        :record="day?.children.find((x) => x.childId === c.id)"
-        :date="selectedDay"
-      />
-    </div>
+    </button>
+  </div>
+  <div class="child-grid">
+    <ChildCard
+      v-for="(c, i) in children"
+      :key="c.id"
+      :child="c"
+      :index="i"
+      :record="day?.children.find((x) => x.childId === c.id)"
+      :date="selectedDay"
+    />
+  </div>
+  <template v-if="plan">
     <WarningList :date="selectedDay" :child-id="child" />
     <div class="actions scope-actions">
       <button class="secondary" @click="generation = { date: selectedDay }">
@@ -128,6 +128,6 @@ const issues = computed(() =>
         ><span v-for="name in names" :key="name" class="chip">{{ name }}</span>
       </div>
       <p v-if="!prepSummary(plan).size">No foods assigned this week.</p>
-    </section></template
-  >
+    </section>
+  </template>
 </template>

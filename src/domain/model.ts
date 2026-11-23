@@ -96,6 +96,11 @@ export interface Plan {
   days: PlannedDay[]
   packedSlots: Packed[]
 }
+export interface SchoolLunch {
+  date: string
+  childId: string
+  mealId: string
+}
 export interface State {
   stateVersion: 1
   children: Child[]
@@ -105,6 +110,7 @@ export interface State {
   preferences: Preference[]
   weeklyInventories: Inventory[]
   weeklyPlans: Plan[]
+  schoolLunches: SchoolLunch[]
   setupComplete: boolean
 }
 export type Scope = { childId?: string; date?: string }
@@ -169,5 +175,6 @@ export function seedState(): State {
     preferences: [],
     weeklyInventories: [],
     weeklyPlans: [],
+    schoolLunches: [],
   }
 }

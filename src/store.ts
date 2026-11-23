@@ -7,7 +7,9 @@ import {
   type Section,
   type Scope,
   type Inventory,
+  type SchoolLunch,
 } from './domain/model'
+import { setSchoolLunch } from './domain/planner'
 import { localDate, monday } from './domain/dates'
 import { Database } from './data/database'
 import { validateState, downloadJSON, exportSection } from './data/transfer'
@@ -114,6 +116,11 @@ export function change(edit: (draft: State) => void) {
     toast((e as Error).message)
     return false
   }
+}
+export async function saveSchoolLunch(choice: SchoolLunch, buying: boolean) {
+  const next = clone(state.value)
+  setSchoolLunch(next, choice, buying)
+  await replaceState(next)
 }
 export function inventory(draft: State): Inventory {
   let inv = draft.weeklyInventories.find((w) => w.weekStart === week.value)

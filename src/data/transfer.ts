@@ -10,9 +10,10 @@ import type {
   Child,
   Schedule,
   Preference,
+  SchoolLunch,
 } from '../domain/model'
 import { clone, packedKey, weekdays } from '../domain/model'
-import { addDays, monday } from '../domain/dates'
+import { addDays, monday, noon } from '../domain/dates'
 import { schemaFor, sections, validatePayload } from './schemas'
 export const maxBytes = 5 * 1024 * 1024
 type Payload = {
@@ -75,6 +76,7 @@ const byFood = (r: { foodId: string }) => r.foodId
 const byChild = (r: { childId: string }) => r.childId
 const byWeek = (r: { weekStart: string }) => r.weekStart
 const byPref = (p: Preference) => JSON.stringify([p.childId, p.foodId])
+const byChildDate = (e: SchoolLunch) => JSON.stringify([e.childId, e.date])
 function requireRef(ok: boolean, path: string) {
   if (!ok)
     throw Error(
@@ -140,6 +142,14 @@ export function validateState(s: State) {
   unique(s.preferences, byPref, 'preferences')
   unique(s.weeklyPlans, byWeek, 'weeklyPlans')
   unique(s.weeklyInventories, byWeek, 'weeklyInventories')
+  const exceptions = s.schoolLunches ?? []
+  unique(exceptions, byChildDate, 'schoolLunches')
+  for (const e of exceptions) {
+    requireRef(children.has(e.childId), 'schoolLunches references unknown child')
+    const weekday = noon(e.date).getDay()
+    if (weekday === 0 || weekday === 6) throw Error('School lunch dates must be weekdays.')
+  }
+  const suppressed = new Map(exceptions.map(e => [byChildDate(e), e.mealId]))
   s.foods.forEach((f, i) =>
     f.categoryIds.forEach((c) =>
       requireRef(
@@ -190,6 +200,12 @@ export function validateState(s: State) {
       'weeklyPlans[' + i + '].weekStart must be Monday',
     )
     planIntegrity(p, 'weeklyPlans[' + i + ']')
+    for (const day of p.days)
+      for (const child of day.children) {
+        const target = suppressed.get(JSON.stringify([child.childId, day.date]))
+        if (child.meals.some(m => m.mealId === target))
+          throw Error('A school lunch cannot also have a packed meal on that date.')
+      }
   })
 }
 export function migrateState(raw: unknown): State {
@@ -198,7 +214,9 @@ export function migrateState(raw: unknown): State {
       'Unsupported or missing stateVersion. Keep a copy and open it with a compatible version.',
     )
   validateState(raw as State)
-  return clone(raw as State)
+  const state = clone(raw as State)
+  state.schoolLunches ??= []
+  return state
 }
 export function parseImport(source: string, section: Section): Payload {
   if (new Blob([source]).size > maxBytes)
@@ -289,6 +307,7 @@ export function previewImport(
         true,
       )
       merge(state.weeklyPlans, restored.weeklyPlans, byWeek, 'plans', true)
+      merge(state.schoolLunches, restored.schoolLunches, byChildDate, 'schoolLunches', true)
       return { next: restored, changes }
     }
     case 'catalog':

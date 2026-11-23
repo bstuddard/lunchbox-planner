@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Apple, Carrot, Utensils } from '@lucide/vue'
-import { plan, change } from '../store'
+import { plan, change, state } from '../store'
+import SchoolLunchChoice from './SchoolLunchChoice.vue'
+import { schoolLunchFor } from '../domain/planner'
 import {
   packedKey,
   type Child,
@@ -15,6 +17,7 @@ const props = defineProps<{
   record?: ChildDay
   packing?: boolean
 }>()
+const buying = computed(() => schoolLunchFor(state.value, props.date, props.child.id))
 const slots = computed(
   () =>
     props.record?.meals.flatMap((m) => m.slots.filter((s) => s.foodId)) ?? [],
@@ -59,11 +62,13 @@ function toggle(mealId: string, slotId: string) {
         record ? record.meals.length + ' meals' : 'No plan'
       }}</span>
     </header>
+    <SchoolLunchChoice :key="date" :child-id="child.id" :date="date" :record="record" :exception="buying"
+      :editable="!packing && state.children.some(c => c.id === child.id)" />
     <div v-if="!record" class="child-empty">
       <Utensils />
-      <p>No meals planned yet</p>
+      <p>{{ buying ? 'No packed meals planned yet' : 'No meals planned yet' }}</p>
     </div>
-    <p v-else-if="!record.meals.length" class="quiet">
+    <p v-else-if="!record.meals.length && !buying" class="quiet">
       No meals scheduled for this day.
     </p>
     <section v-for="meal in record?.meals" :key="meal.mealId" class="meal">

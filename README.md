@@ -14,6 +14,10 @@ Plan five weekdays of school lunches and check items off as you pack. This insta
 
 To pack a drink, tag a catalog item **Drink** and mark it available in **Inventory**. In **Setup > Schedules**, select the child and weekday, edit the meal, and check **Include a drink**. Generate or regenerate that meal’s day to assign an available drink the child accepts. Use **Copy day** to apply the schedule to other weekdays for that child.
 
+## Buying school lunch
+
+On **Weekly plan**, select a weekday and check **Buying School Lunch** on the child’s card. This applies to the displayed date, even if you set it before generating the week. If your meals have custom names, choose which packed meal to replace. Snacks and other meals keep their assignments and packing checks. Uncheck the box to plan that lunch again using the current schedule and inventory. **Today** shows the school lunch, and full backups include these choices.
+
 ## Install and use offline
 
 Open the HTTPS site in Android Chrome while online. Wait for **Ready for offline use**, then choose **Install app** or **Add to Home screen** from Chrome's menu. Reopen from the home-screen icon. The app caches its screens, fonts, artwork and scripts for offline use. When an update appears, finish edits and export a backup before choosing **Update now**.

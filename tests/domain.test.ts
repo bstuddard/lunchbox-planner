@@ -13,6 +13,7 @@ import {
   warnings,
   prepSummary,
   inScope,
+  setSchoolLunch,
 } from '../src/domain/planner'
 const week = '2026-11-23'
 function fixture(n = 6) {
@@ -53,6 +54,70 @@ describe('local calendar', () => {
   })
 })
 describe('planner', () => {
+  it('replaces one dated lunch and restores only that meal using current stock', () => {
+    const s = fixture()
+    const meals = s.schedules[0].weekdays.Wednesday
+    meals[0].requirements[0].count = 2
+    meals[1].requirements.push({ categoryId: 'cat-drink', count: 1 })
+    meals.push({ ...clone(meals[0]), id: 'club', name: 'After school', sortOrder: 2 })
+    for (const id of ['milk', 'water']) {
+      s.foods.push({ id, name: id, categoryIds: ['cat-drink'], archived: false })
+      s.weeklyInventories[0].entries.push({ foodId: id, available: id === 'milk' })
+    }
+    const choice = { childId: 'child-1', date: '2026-11-25', mealId: 'lunch' }
+    const plan = generatePlan(s, week, {}, 'packed')
+    s.weeklyPlans.push(plan)
+    for (const c of plan.days[2].children)
+      for (const meal of c.meals)
+        plan.packedSlots.push({ date: choice.date, childId: c.childId, mealId: meal.mealId,
+          slotId: meal.slots[0].slotId, packed: true })
+    const before = clone(plan)
+    const templates = clone(s.schedules)
+    const expected = clone(plan)
+    expected.days[2].children[0].meals.splice(1, 1)
+    expected.packedSlots = expected.packedSlots.filter(p => p.childId !== choice.childId || p.mealId !== choice.mealId)
+    setSchoolLunch(s, choice, true)
+    setSchoolLunch(s, choice, true)
+    expect(plan).toEqual(expected)
+    expect(s.schoolLunches).toEqual([choice])
+    expect(warnings(s, plan)).toEqual([])
+    expect(prepSummary(plan).get('Drink')).toBeUndefined()
+    for (const e of s.weeklyInventories[0].entries) {
+      if (e.foodId === 'milk') e.available = false
+      if (e.foodId === 'water') e.available = true
+    }
+    setSchoolLunch(s, choice, false)
+    const restored = plan.days[2].children[0].meals[1]
+    expect(restored.slots.map(slot => slot.categoryId)).toEqual(['cat-main', 'cat-snack', 'cat-snack', 'cat-drink'])
+    expect(restored.slots.at(-1)?.foodId).toBe('water')
+    before.days[2].children[0].meals[1] = restored
+    before.packedSlots = expected.packedSlots
+    expect(plan).toEqual(before)
+    expect(s.schoolLunches).toEqual([])
+    expect(s.schedules).toEqual(templates)
+  })
+  it('honors multiple exceptions in every scope and excludes those meals from scoring', () => {
+    const s = fixture()
+    const reference = clone(s)
+    for (const [ci, di] of [[0, 2], [1, 2], [0, 4]]) {
+      setSchoolLunch(s, { date: addDays(week, di), childId: s.children[ci].id, mealId: 'lunch' }, true)
+      reference.schedules[ci].weekdays[weekdays[di]].splice(1, 1)
+    }
+    const generated = generatePlan(s, week, {}, 'first')
+    expect(generated).toEqual(generatePlan(reference, week, {}, 'first'))
+    s.weeklyPlans.push(generated)
+    reference.weeklyPlans.push(clone(generated))
+    for (const scope of [{}, { childId: 'child-1' }, { date: '2026-11-25' }, { date: '2026-11-27', childId: 'child-1' }]) {
+      const plan = generatePlan(s, week, scope, 'regenerate')
+      expect(plan).toEqual(generatePlan(reference, week, scope, 'regenerate'))
+      expect(warnings(s, plan)).toEqual([])
+      expect(plan.days[1].children[0].meals).toHaveLength(2)
+      expect(plan.days[2].children.every(c => c.meals.length === 1)).toBe(true)
+      expect(plan.days[4].children[1].meals).toHaveLength(2)
+    }
+    const nextWeek = generatePlan(s, addDays(week, 7), {}, 'next')
+    expect(nextWeek.days.every(d => d.children.every(c => c.meals.some(m => m.mealId === 'lunch')))).toBe(true)
+  })
   it('uses a catalog’s drink ID and leaves repurposed category IDs intact', () => {
     const categories = seedState().categories
     const starter = drinkCategory(categories)

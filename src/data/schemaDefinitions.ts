@@ -42,6 +42,17 @@ const obj = (
   properties: Record<string, Schema>,
   required = Object.keys(properties),
 ) => ({ type: 'object', additionalProperties: false, properties, required })
+const originalStateFields = {
+  stateVersion: { const: 1 },
+  setupComplete: bool,
+  children: array(ref('child')),
+  categories: array(ref('category')),
+  foods: array(ref('food')),
+  schedules: array(ref('schedule')),
+  preferences: array(ref('preference')),
+  weeklyInventories: array(ref('inventory')),
+  weeklyPlans: array(ref('plan')),
+}
 const defs: Record<string, Schema> = {
   child: obj({ id, name, sortOrder: order }),
   category: obj({
@@ -157,17 +168,11 @@ const defs: Record<string, Schema> = {
     days: { ...array(ref('day')), minItems: 5, maxItems: 5 },
     packedSlots: array(ref('packed')),
   }),
+  schoolLunch: obj({ date, childId: id, mealId: id }),
   state: obj({
-    stateVersion: { const: 1 },
-    setupComplete: bool,
-    children: array(ref('child')),
-    categories: array(ref('category')),
-    foods: array(ref('food')),
-    schedules: array(ref('schedule')),
-    preferences: array(ref('preference')),
-    weeklyInventories: array(ref('inventory')),
-    weeklyPlans: array(ref('plan')),
-  }),
+    ...originalStateFields,
+    schoolLunches: array(ref('schoolLunch'), 'One packed meal replaced by school lunch per child and calendar date.'),
+  }, Object.keys(originalStateFields)),
 }
 const payloads: Record<Section, Record<string, Schema>> = {
   children: { children: array(ref('child')) },

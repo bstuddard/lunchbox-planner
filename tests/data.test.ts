@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 import { deleteDB, openDB } from 'idb'
 import { seedState, clone } from '../src/domain/model'
-import { generatePlan } from '../src/domain/planner'
+import { generatePlan, setSchoolLunch } from '../src/domain/planner'
 import {
   exportSection,
   parseImport,
@@ -41,6 +41,26 @@ function fixture() {
   return s
 }
 describe('section transfer', () => {
+  it('opens legacy snapshots and imports legacy full backups without changing existing records', () => {
+    const current = fixture()
+    const { schoolLunches, ...legacy } = clone(current)
+    expect(schoolLunches).toEqual([])
+    expect(migrateState(legacy)).toEqual(current)
+    const file = exportSection(current, 'backup', week)
+    const oldFile = { ...file, data: { ...file.data, appState: legacy } }
+    const withException = clone(current)
+    setSchoolLunch(withException, { date: week, childId: 'child-1', mealId: 'lunch' }, true)
+    expect(previewImport(withException, parseImport(JSON.stringify(oldFile), 'backup'), week).next).toEqual(current)
+    const modern = exportSection(withException, 'backup', week)
+    expect(previewImport(current, parseImport(JSON.stringify(modern), 'backup'), week).next).toEqual(withException)
+  })
+  it('rejects duplicate choices, weekend dates and inconsistent packed lunches in backups', () => {
+    const state = fixture()
+    const choice = { childId: 'child-1', date: week, mealId: 'lunch' }
+    expect(() => migrateState({ ...state, schoolLunches: [choice] })).toThrow(/also have a packed meal/)
+    for (const choices of [[choice, choice], [{ ...choice, date: '2026-11-28' }], [{ ...choice, childId: 'missing' }]])
+      expect(() => migrateState({ ...state, schoolLunches: choices })).toThrow()
+  })
   it.each(sections)(
     'round trips %s in both modes with a self-contained schema',
     (section) => {
@@ -141,6 +161,24 @@ describe('device database', () => {
   afterEach(() => {
     opened.splice(0).forEach((d) => d.db?.close())
     vi.restoreAllMocks()
+  })
+  it('opens a pre-exception database without writing and preserves its contents on the next commit', async () => {
+    const writer = db()
+    await writer.open()
+    const original = fixture()
+    const { schoolLunches: _, ...legacy } = original
+    const raw = { revision: 7, savedAt: week + 'T12:00:00Z', state: legacy }
+    await writer.db!.put('snapshots', raw, 'current')
+    const reader = db()
+    const loaded = await reader.open()
+    expect(loaded?.state).toEqual(original)
+    expect(await reader.db!.get('snapshots', 'current')).toEqual(raw)
+    const choice = { childId: 'child-2', date: '2026-12-01', mealId: 'lunch' }
+    setSchoolLunch(loaded!.state, choice, true)
+    await reader.save(loaded!.state)
+    const reopened = await db().open()
+    expect(reopened?.revision).toBe(8)
+    expect(reopened?.state).toEqual({ ...original, schoolLunches: [choice] })
   })
   it('detaches nested Vue proxies before starting a snapshot write', async () => {
     const a = db()
