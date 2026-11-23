@@ -7,6 +7,39 @@ const publicFiles = new Set([
   'icons/icon-512.png', 'icons/maskable-512.png',
 ])
 
+export function developmentFiles(): Plugin {
+  return {
+    name: 'planner-development-files',
+    apply: 'serve',
+    config() {
+      return {
+        publicDir: false,
+        server: {
+          fs: {
+            allow: ['index.html', 'src', 'node_modules', ...Array.from(publicFiles, file => 'public/' + file)],
+            deny: [
+              '.env', '.env.*', '*.{crt,pem,key,p12,pfx,cer,der}', '.npmrc', '.yarnrc.yml',
+              '**/{.git,.private,.openai,.codex,.agents,.aws}/**', '**/*.[mM][dD]', '**/*.[jJ][sS][oO][nN]',
+            ],
+          },
+        },
+      }
+    },
+    configureServer(server) {
+      // Let Vite serve these assets through its normal filesystem checks.
+      // Keep the same public URLs used by the production build and manifest.
+      const base = server.config.base
+      server.middlewares.use((req, _res, next) => {
+        const url = req.url ?? ''
+        const pathname = url.split('?', 1)[0]
+        if (pathname.startsWith(base) && publicFiles.has(pathname.slice(base.length)))
+          req.url = base + 'public/' + url.slice(base.length)
+        next()
+      })
+    },
+  }
+}
+
 export function release(): Plugin {
   return {
     name: 'planner-release',
@@ -26,7 +59,7 @@ export function release(): Plugin {
     transformIndexHtml() {
       return [{ tag: 'meta', injectTo: 'head-prepend', attrs: {
         'http-equiv': 'Content-Security-Policy',
-        content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
+        content: "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
       } }]
     },
     generateBundle() {

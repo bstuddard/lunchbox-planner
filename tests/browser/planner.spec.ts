@@ -17,8 +17,19 @@ test('installed shell supports offline setup, scoped generation, packing, export
       external.add(r.url())
   })
   const errors: string[] = []
+  const policyViolations: string[] = []
+  await page.exposeFunction('recordPlannerPolicyViolation', (directive: string) => {
+    policyViolations.push(directive)
+  })
+  await page.addInitScript(() => {
+    document.addEventListener('securitypolicyviolation', event => {
+      const report = (window as Window & { recordPlannerPolicyViolation: (directive: string) => void }).recordPlannerPolicyViolation
+      report(event.effectiveDirective)
+    })
+  })
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/')
+  await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveAttribute('content', /style-src 'self';/)
   await expect(
     page.getByRole('heading', { name: 'Today’s lunchbox' }),
   ).toBeVisible()
@@ -95,6 +106,7 @@ test('installed shell supports offline setup, scoped generation, packing, export
   await page.getByRole('checkbox').first().check()
   const packed = page.getByText(/1 of \d+ packed/)
   await expect(packed).toBeVisible()
+  expect(await page.locator('.child-card .track i').first().evaluate(el => el.getBoundingClientRect().width)).toBeGreaterThan(0)
   await expect(page.getByRole('button', { name: 'Saved on this device', exact: true })).toBeVisible()
   await page.reload()
   await expect(packed).toBeVisible()
@@ -166,6 +178,7 @@ test('installed shell supports offline setup, scoped generation, packing, export
     await fresh.close()
   }
   expect(errors).toEqual([])
+  expect(policyViolations).toEqual([])
   expect([...external]).toEqual([])
 })
 test('a persistent profile relaunches offline and updates only on request', async () => {

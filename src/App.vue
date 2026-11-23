@@ -38,6 +38,7 @@ import Week from './screens/Week.vue'
 import Pantry from './screens/Pantry.vue'
 import Setup from './screens/Setup.vue'
 import Generation from './components/Generation.vue'
+const appIcon = import.meta.env.BASE_URL + 'icons/icon-192.png'
 const paths = [
   { key: 'Today', icon: ClipboardCheck, label: 'Today' },
   { key: 'Week', icon: CalendarDays, label: 'Weekly plan' },
@@ -103,7 +104,7 @@ onBeforeUnmount(() => {
   <div class="shell">
     <aside class="rail">
       <a href="#today" class="brand" @click.prevent="navigate('Today')"
-        ><img src="/icons/icon-192.png" alt="" /><span
+        ><img :src="appIcon" alt="" /><span
           >Lunchbox<small>PLANNER</small></span
         ></a
       >
@@ -135,7 +136,7 @@ onBeforeUnmount(() => {
         <div class="crumb">
           <span class="desktop-brand"><PanelLeft /> Workspace</span
           ><span class="mobile-brand"
-            ><img src="/icons/icon-192.png" alt="" />Lunchbox Planner</span
+            ><img :src="appIcon" alt="" />Lunchbox Planner</span
           ><ChevronRight class="crumb-arrow" /><strong>{{
             active.label
           }}</strong>

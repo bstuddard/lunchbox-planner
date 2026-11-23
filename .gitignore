@@ -8,6 +8,7 @@
 !/package-lock.json
 !/tsconfig.json
 .npmrc
+.yarnrc.yml
 *.p12
 *.pfx
 node_modules/
