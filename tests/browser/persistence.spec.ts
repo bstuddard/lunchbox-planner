@@ -119,8 +119,11 @@ test('an aborted import never reports success and can be retried', async ({ page
     const put = IDBObjectStore.prototype.put
     IDBObjectStore.prototype.put = function (...args) {
       const request = put.apply(this, args)
-      IDBObjectStore.prototype.put = put
-      request.addEventListener('success', () => this.transaction.abort())
+      if (this.transaction.db.name === 'lunchbox-planner' && this.name === 'snapshots' &&
+          args[1] === 'current' && args[0]?.state?.foods?.length === 13) {
+        IDBObjectStore.prototype.put = put
+        request.addEventListener('success', () => this.transaction.abort())
+      }
       return request
     }
   })

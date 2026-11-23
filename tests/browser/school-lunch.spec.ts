@@ -99,12 +99,17 @@ test('a custom meal can be replaced and a failed write reports failure until ret
   await button(page, 'Generate plan').click()
   const card = page.getByRole('article').first()
   await card.getByLabel('Packed meal to replace').selectOption('midday')
+  await saved(page)
   await page.evaluate(() => {
     const put = IDBObjectStore.prototype.put
     IDBObjectStore.prototype.put = function (...args) {
-      IDBObjectStore.prototype.put = put
       const request = put.apply(this, args)
-      request.addEventListener('success', () => this.transaction.abort())
+      if (this.transaction.db.name === 'lunchbox-planner' && this.name === 'snapshots' &&
+          args[1] === 'current' && args[0]?.state?.schoolLunches?.some(
+            (e: { mealId: string }) => e.mealId === 'midday')) {
+        IDBObjectStore.prototype.put = put
+        request.addEventListener('success', () => this.transaction.abort())
+      }
       return request
     }
   })
